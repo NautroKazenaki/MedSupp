@@ -1,5 +1,4 @@
 import { del, list, put } from '@vercel/blob'
-import { compare } from 'bcryptjs'
 import { SignJWT, jwtVerify } from 'jose'
 
 export type Medicine = {
@@ -42,11 +41,11 @@ export async function session(req: any): Promise<{ username: string } | null> {
 
 export async function authenticate(username: string, password: string) {
   const users = [
-    { username: process.env.USER_1_NAME, passwordHash: process.env.USER_1_PASSWORD_HASH },
-    { username: process.env.USER_2_NAME, passwordHash: process.env.USER_2_PASSWORD_HASH }
+    { username: process.env.USER_1_NAME, password: process.env.USER_1_PASSWORD },
+    { username: process.env.USER_2_NAME, password: process.env.USER_2_PASSWORD }
   ]
   const user = users.find((candidate) => candidate.username?.toLocaleLowerCase('ru') === username.trim().toLocaleLowerCase('ru'))
-  return user?.username && user.passwordHash && await compare(password, user.passwordHash) ? user.username : null
+  return user?.username && user.password === password ? user.username : null
 }
 
 export async function setSession(res: any, username: string) {

@@ -16,21 +16,14 @@ npm run dev
 
 1. Создайте проект в Vercel и подключите Git-репозиторий.
 2. В разделе **Storage** создайте **Blob Store** и подключите его к проекту. Vercel добавит `BLOB_READ_WRITE_TOKEN`.
-3. В **Settings → Environment Variables** добавьте `SESSION_SECRET`, `USER_1_NAME`, `USER_2_NAME`, `USER_1_PASSWORD_HASH` и `USER_2_PASSWORD_HASH`.
-4. Создайте хеш для каждого пароля локально:
-
-   ```bash
-   node -e "import('bcryptjs').then(({hash}) => hash('ваш-пароль', 12).then(console.log))"
-   ```
-
-   В Vercel следует добавлять получившиеся хеши, а не сами пароли. Значения из `.env.local` не коммитятся.
-5. Сделайте deploy. Vercel автоматически соберёт Vite-фронтенд и развернёт обработчики из папки `api/`.
+3. В **Settings → Environment Variables** добавьте `SESSION_SECRET`, `USER_1_NAME`, `USER_2_NAME`, `USER_1_PASSWORD_HASH` и `USER_2_PASSWORD_HASH`. Несмотря на суффикс `_HASH`, в этой упрощённой версии в последние две переменные добавляются обычные пароли. Значения из `.env.local` не коммитятся.
+4. Сделайте deploy. Vercel автоматически соберёт Vite-фронтенд и развернёт обработчики из папки `api/`.
 
 ## Устройство данных
 
 Каждая запись — это JSON-файл в Blob с именем `medicines/<uuid>.json`. Это позволяет Сергею и Дарье добавлять и редактировать разные лекарства без общей базы данных.
 
-Доступ к приложению защищён именем пользователя, bcrypt-хешем пароля и подписанной `HttpOnly`-cookie. Cookie не доступна JavaScript и не хранит пароль.
+Доступ к приложению защищён именем пользователя, паролем из переменных Vercel и подписанной `HttpOnly`-cookie. Cookie не доступна JavaScript и не хранит пароль.
 
 ## Важное ограничение Vercel Blob
 
