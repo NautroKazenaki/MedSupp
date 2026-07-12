@@ -61,11 +61,11 @@ export async function session(req: any): Promise<{ username: string } | null> {
 
 export async function authenticate(username: string, password: string) {
   const users = [
-    { username: process.env.USER_1_NAME, password: process.env.USER_1_PASSWORD_HASH },
-    { username: process.env.USER_2_NAME, password: process.env.USER_2_PASSWORD_HASH }
+    { username: process.env.USER_1_NAME?.trim(), password: process.env.USER_1_PASSWORD_HASH?.trim() },
+    { username: process.env.USER_2_NAME?.trim(), password: process.env.USER_2_PASSWORD_HASH?.trim() }
   ]
   const user = users.find((candidate) => candidate.username?.toLocaleLowerCase('ru') === username.trim().toLocaleLowerCase('ru'))
-  return user?.username && user.password === password ? user.username : null
+  return user?.username && user.password && user.password === password ? user.username : null
 }
 
 export async function setSession(res: any, username: string) {

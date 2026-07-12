@@ -52,6 +52,11 @@ export default function App() {
     [medicines]
   )
 
+  const purposeSuggestions = useMemo(
+    () => [...new Set(medicines.map((medicine) => medicine.purpose.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru')),
+    [medicines]
+  )
+
   if (session === undefined) return <main className="auth-shell"><p className="muted">Открываем аптечку…</p></main>
   if (!session) return <Login onLogin={setSession} />
 
@@ -81,7 +86,7 @@ export default function App() {
           }} />)}
         </section>
       )}
-      {modal && <MedicineDialog medicine={modal === 'new' ? undefined : modal} onClose={() => setModal(null)} onSaved={async () => { setModal(null); await load() }} />}
+      {modal && <MedicineDialog medicine={modal === 'new' ? undefined : modal} purposeSuggestions={purposeSuggestions} onClose={() => setModal(null)} onSaved={async () => { setModal(null); await load() }} />}
     </main>
   )
 }
@@ -102,7 +107,7 @@ function MedicineCard({ medicine, onEdit, onDelete }: { medicine: Medicine; onEd
   return <article className="medicine-card"><div className="card-heading"><span className="medicine-mark"><Pill size={19} /></span><div className="card-actions"><button className="icon-button" onClick={onEdit} title="Изменить"><Pencil size={16} /></button><button className="icon-button danger" onClick={onDelete} title="Удалить"><Trash2 size={16} /></button></div></div><h2>{medicine.name}</h2><p className="purpose">{medicine.purpose || 'Не указано назначение'}</p><div className="card-footer"><div><span className="field-label"><CalendarDays size={14} /> Годен до</span><strong>{formatDate(medicine.expiryDate)}</strong><span className={`status ${state}`}>{label}</span></div><div className="quantity"><span className="field-label">Остаток</span><strong>{medicine.quantityTracking ? `${medicine.quantity ?? 0} шт.` : 'Рассыпное'}</strong></div></div></article>
 }
 
-function MedicineDialog({ medicine, onClose, onSaved }: { medicine?: Medicine; onClose: () => void; onSaved: () => Promise<void> }) {
+function MedicineDialog({ medicine, purposeSuggestions, onClose, onSaved }: { medicine?: Medicine; purposeSuggestions: string[]; onClose: () => void; onSaved: () => Promise<void> }) {
   const [data, setData] = useState<MedicineInput>(medicine ? { name: medicine.name, purpose: medicine.purpose, expiryDate: medicine.expiryDate, quantity: medicine.quantity, quantityTracking: medicine.quantityTracking } : emptyMedicine)
   const [error, setError] = useState('')
   const save = async (event: React.FormEvent) => {
@@ -113,5 +118,5 @@ function MedicineDialog({ medicine, onClose, onSaved }: { medicine?: Medicine; o
       await onSaved()
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Не удалось сохранить запись') }
   }
-  return <div className="dialog-backdrop" role="presentation"><form className="dialog" onSubmit={save}><div className="dialog-title"><div><p className="eyebrow">{medicine ? 'РЕДАКТИРОВАНИЕ' : 'НОВОЕ ЛЕКАРСТВО'}</p><h2>{medicine ? medicine.name : 'Добавить лекарство'}</h2></div><button className="icon-button" type="button" onClick={onClose}>×</button></div><label>Название<input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} required autoFocus /></label><label>От чего помогает<textarea value={data.purpose} onChange={(e) => setData({ ...data, purpose: e.target.value })} rows={2} /></label><label>Срок годности<input type="date" value={data.expiryDate} onChange={(e) => setData({ ...data, expiryDate: e.target.value })} required /></label><label className="check-label"><input type="checkbox" checked={data.quantityTracking} onChange={(e) => setData({ ...data, quantityTracking: e.target.checked, quantity: e.target.checked ? data.quantity : null })} /> Учитывать количество таблеток</label>{data.quantityTracking && <label>Осталось таблеток<input type="number" min="0" value={data.quantity ?? ''} onChange={(e) => setData({ ...data, quantity: e.target.value === '' ? null : Number(e.target.value) })} /></label>}{error && <p className="form-error">{error}</p>}<div className="dialog-buttons"><button type="button" className="secondary-button" onClick={onClose}>Отмена</button><button type="submit" className="primary-button">Сохранить</button></div></form></div>
+  return <div className="dialog-backdrop" role="presentation"><form className="dialog" onSubmit={save}><div className="dialog-title"><div><p className="eyebrow">{medicine ? 'РЕДАКТИРОВАНИЕ' : 'НОВОЕ ЛЕКАРСТВО'}</p><h2>{medicine ? medicine.name : 'Добавить лекарство'}</h2></div><button className="icon-button" type="button" onClick={onClose}>×</button></div><label>Название<input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} required autoFocus /></label><label>От чего помогает<input value={data.purpose} onChange={(e) => setData({ ...data, purpose: e.target.value })} list="purpose-suggestions" placeholder="Начните вводить или выберите из списка" autoComplete="off" /><datalist id="purpose-suggestions">{purposeSuggestions.map((purpose) => <option key={purpose} value={purpose} />)}</datalist></label><label>Срок годности<input type="date" value={data.expiryDate} onChange={(e) => setData({ ...data, expiryDate: e.target.value })} required /></label><label className="check-label"><input type="checkbox" checked={data.quantityTracking} onChange={(e) => setData({ ...data, quantityTracking: e.target.checked, quantity: e.target.checked ? data.quantity : null })} /> Учитывать количество таблеток</label>{data.quantityTracking && <label>Осталось таблеток<input type="number" min="0" value={data.quantity ?? ''} onChange={(e) => setData({ ...data, quantity: e.target.value === '' ? null : Number(e.target.value) })} /></label>}{error && <p className="form-error">{error}</p>}<div className="dialog-buttons"><button type="button" className="secondary-button" onClick={onClose}>Отмена</button><button type="submit" className="primary-button">Сохранить</button></div></form></div>
 }
