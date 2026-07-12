@@ -1,4 +1,4 @@
-import { allMedicines, medicineInput, parseBody, requireSession, saveMedicine } from '../_lib'
+import { allMedicines, medicineInput, parseBody, requireSession, saveMedicine } from '../_lib.js'
 
 export default async function handler(req: any, res: any) {
   if (!await requireSession(req, res)) return

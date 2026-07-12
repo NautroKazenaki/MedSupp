@@ -1,5 +1,5 @@
 import { del, list, put } from '@vercel/blob'
-import { SignJWT, jwtVerify } from 'jose'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 
 export type Medicine = {
   id: string
@@ -12,13 +12,34 @@ export type Medicine = {
   updatedAt: string
 }
 
-const encoder = new TextEncoder()
 const cookieName = 'medsupp_session'
+const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
 
 function secret() {
   const value = process.env.SESSION_SECRET
   if (!value) throw new Error('SESSION_SECRET is not configured')
-  return encoder.encode(value)
+  return value
+}
+
+function sign(payload: string) {
+  return createHmac('sha256', secret()).update(payload).digest('base64url')
+}
+
+function issueToken(username: string) {
+  const payload = Buffer.from(JSON.stringify({ username, exp: Date.now() + thirtyDaysMs })).toString('base64url')
+  return `${payload}.${sign(payload)}`
+}
+
+function verifyToken(token: string): { username: string } | null {
+  const [payload, signature] = token.split('.')
+  if (!payload || !signature) return null
+  const expected = sign(payload)
+  const provided = Buffer.from(signature)
+  const expectedBuffer = Buffer.from(expected)
+  if (provided.length !== expectedBuffer.length || !timingSafeEqual(provided, expectedBuffer)) return null
+  const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'))
+  if (typeof data.username !== 'string' || typeof data.exp !== 'number' || data.exp < Date.now()) return null
+  return { username: data.username }
 }
 
 function cookies(header = '') {
@@ -32,8 +53,7 @@ export async function session(req: any): Promise<{ username: string } | null> {
   try {
     const token = cookies(req.headers.cookie)[cookieName]
     if (!token) return null
-    const { payload } = await jwtVerify(token, secret())
-    return typeof payload.username === 'string' ? { username: payload.username } : null
+    return verifyToken(token)
   } catch {
     return null
   }
@@ -41,15 +61,15 @@ export async function session(req: any): Promise<{ username: string } | null> {
 
 export async function authenticate(username: string, password: string) {
   const users = [
-    { username: process.env.USER_1_NAME, password: process.env.USER_1_PASSWORD },
-    { username: process.env.USER_2_NAME, password: process.env.USER_2_PASSWORD }
+    { username: process.env.USER_1_NAME, password: process.env.USER_1_PASSWORD_HASH },
+    { username: process.env.USER_2_NAME, password: process.env.USER_2_PASSWORD_HASH }
   ]
   const user = users.find((candidate) => candidate.username?.toLocaleLowerCase('ru') === username.trim().toLocaleLowerCase('ru'))
   return user?.username && user.password === password ? user.username : null
 }
 
 export async function setSession(res: any, username: string) {
-  const token = await new SignJWT({ username }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('30d').sign(secret())
+  const token = issueToken(username)
   res.setHeader('Set-Cookie', `${cookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${process.env.VERCEL ? '; Secure' : ''}`)
 }
 
