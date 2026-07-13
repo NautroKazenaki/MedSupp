@@ -8,7 +8,7 @@ export default async function handler(req: any, res: any) {
     const authenticated = await authenticate(username, password)
     if (!authenticated) return res.status(401).json({ error: 'Неверный логин или пароль' })
     await setSession(res, authenticated)
-    return res.status(200).json({ username: authenticated })
+    return res.status(200).json(authenticated)
   } catch {
     return res.status(500).json({ error: 'Не удалось выполнить вход' })
   }

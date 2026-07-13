@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && tsc -p tsconfig.api.json && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate:household": "node --env-file=.env.local scripts/migrate-medicines-to-household.mjs",
+    "migrate:household:dry": "node --env-file=.env.local scripts/migrate-medicines-to-household.mjs --dry-run",
+    "migrate:household:cleanup": "node --env-file=.env.local scripts/migrate-medicines-to-household.mjs --delete-old"
   },
   "dependencies": {
     "@vercel/blob": "^2.6.1",

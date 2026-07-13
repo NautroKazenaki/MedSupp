@@ -14,4 +14,4 @@ export type MedicineInput = Pick<
   'name' | 'purpose' | 'expiryDate' | 'quantity' | 'quantityTracking'
 >
 
-export type Session = { username: string }
+export type Session = { username: string; household: string }
